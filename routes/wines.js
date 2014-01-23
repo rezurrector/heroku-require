@@ -1,30 +1,31 @@
-var mongo = require('mongodb');
-
-var Server = mongo.Server,
+var mongo = require('mongodb'),
     Db = mongo.Db,
-    BSON = mongo.BSONPure;
+    BSON = mongo.BSONPure,
+    db;
 
-database = null;
-
-mongo.connect(process.env.MONGOLAB_URI, {}, dbConnectionOpen);
-
-function dbConnectionOpen(err, db) {
-    database = db;
-    if(!err) {
+var dbURI = process.env.MONGOLAB_URI || 'mongodb://localhost:27017/winedb';
+    
+Db.connect(dbURI, { server: {auto_reconnect: true}, db: {w: 1} }, function(err, _db) {
+    if (!err) {
+        db = _db;
         console.log("Connected to 'winedb' database");
-        db.collection('wines', {safe:true}, function(err, collection) {
+        _db.collection('wines', {strict: true}, function(err, collection) {
             if (err) {
                 console.log("The 'wines' collection doesn't exist. Creating it with sample data...");
                 populateDB();
             }
         });
+    } else {
+        console.log('Could\'t connect to database : ' + err.message);
     }
-}
+
+});
+
 
 exports.findById = function(req, res) {
     var id = req.params.id;
     console.log('Retrieving wine: ' + id);
-    database.collection('wines', function(err, collection) {
+    db.collection('wines', function(err, collection) {
         collection.findOne({'_id':new BSON.ObjectID(id)}, function(err, item) {
             res.send(item);
         });
@@ -32,7 +33,7 @@ exports.findById = function(req, res) {
 };
 
 exports.findAll = function(req, res) {
-    database.collection('wines', function(err, collection) {
+    db.collection('wines', function(err, collection) {
         collection.find().toArray(function(err, items) {
             res.send(items);
         });
@@ -42,7 +43,7 @@ exports.findAll = function(req, res) {
 exports.addWine = function(req, res) {
     var wine = req.body;
     console.log('Adding wine: ' + JSON.stringify(wine));
-    database.collection('wines', function(err, collection) {
+    db.collection('wines', function(err, collection) {
         collection.insert(wine, {safe:true}, function(err, result) {
             if (err) {
                 res.send({'error':'An error has occurred'});
@@ -52,7 +53,7 @@ exports.addWine = function(req, res) {
             }
         });
     });
-};
+}
 
 exports.updateWine = function(req, res) {
     var id = req.params.id;
@@ -60,7 +61,7 @@ exports.updateWine = function(req, res) {
     delete wine._id;
     console.log('Updating wine: ' + id);
     console.log(JSON.stringify(wine));
-    database.collection('wines', function(err, collection) {
+    db.collection('wines', function(err, collection) {
         collection.update({'_id':new BSON.ObjectID(id)}, wine, {safe:true}, function(err, result) {
             if (err) {
                 console.log('Error updating wine: ' + err);
@@ -71,12 +72,12 @@ exports.updateWine = function(req, res) {
             }
         });
     });
-};
+}
 
 exports.deleteWine = function(req, res) {
     var id = req.params.id;
     console.log('Deleting wine: ' + id);
-    database.collection('wines', function(err, collection) {
+    db.collection('wines', function(err, collection) {
         collection.remove({'_id':new BSON.ObjectID(id)}, {safe:true}, function(err, result) {
             if (err) {
                 res.send({'error':'An error has occurred - ' + err});
@@ -86,7 +87,7 @@ exports.deleteWine = function(req, res) {
             }
         });
     });
-};
+}
 
 /*--------------------------------------------------------------------------------------------------------------------*/
 // Populate database with sample data -- Only used once: the first time the application is started.
@@ -311,7 +312,7 @@ var populateDB = function() {
         picture: "waterbrook.jpg"
     }];
 
-    database.collection('wines', function(err, collection) {
+    db.collection('wines', function(err, collection) {
         collection.insert(wines, {safe:true}, function(err, result) {});
     });
 
