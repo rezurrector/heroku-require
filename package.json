@@ -1,0 +1,21 @@
+{
+  "name": "nodecellar-requirejs",
+  "description": "Wine Cellar Application Redux",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/theasta/nodecellar-requirejs.git"
+  },
+  "private": true,
+  "scripts" : {
+    "start": "node server"
+  },
+  "dependencies": {
+    "express": "3.x",
+    "mongodb": "~1.2.11"
+  },
+  "engines": {
+    "node": "0.8.4",
+    "npm": "1.1.49"
+  }
+}
